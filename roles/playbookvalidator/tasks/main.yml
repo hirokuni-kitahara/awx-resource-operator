@@ -15,10 +15,10 @@
   shell: | 
     curl -s -k -f -H 'Content-Type: application/json' -XGET --user {{ aap_token }} {{ aap_api_url }}job_templates/ > job_templates.json
     cat job_templates.json | ./jq .results | ./jq '.[] | select(.name=="{{ job_template_name }}")' > target_job_template.json
-    cat target_job_template.json | ./jq .playbook > playbook_name
+    cat target_job_template.json | ./jq -r .playbook > playbook_name
     proj_id=$(cat target_job_template.json | ./jq .project)
     curl -s -k -f -H 'Content-Type: application/json' -XGET --user {{ aap_token }} {{ aap_api_url }}projects/$proj_id/ > target_project.json
-    cat target_project.json | ./jq .scm_url > playbook_repo_url
+    cat target_project.json | ./jq -r .scm_url > playbook_repo_url
 
 - name: Set playbook info vars
   set_fact:
@@ -28,3 +28,68 @@
 - name: Output results
   debug:
     msg: "Playbook Info: URL={{ playbook_repo_url }}, FILE={{ playbook_name }}."
+
+- name: Git clone
+  ansible.builtin.git:
+    repo: "{{ playbook_repo_url }}.git"
+    dest: ./playbook-repo/
+
+- name: Read Public key Secret
+  k8s_info:
+    kind: Secret
+    api_version: v1
+    name: "public-key-secret"
+    namespace: "{{ ansible_operator_meta.namespace }}"
+  register: pubkey_secret
+
+- name: Validate Public key Secret Exists
+  assert:
+    that:
+      - pubkey_secret["resources"] is defined and (pubkey_secret["resources"]|length>0)
+    fail_msg: "Public key Secret must exist"
+
+- name: Verify playbook signature
+  shell: | 
+    playbook_dir=$(dirname ./playbook-repo/{{ playbook_name }})
+    msg_file=$playbook_dir/playbook-summary
+    sig_file=$playbook_dir/playbook-summary.sig
+    pubkey_file=pubkey.gpg
+    echo {{ pubkey_secret['resources'][0]['data']['pubring.gpg'] }} > ./tmp_pubkey
+    cat ./tmp_pubkey | base64 -d > $pubkey_file
+    gpg --import $pubkey_file
+    if gpg --verify $sig_file $msg_file ; then
+        echo "success" > verify_result
+    else 
+        echo "failure" > verify_result
+    fi
+
+- name: Set signature verification result
+  set_fact:
+    verify_result: "{{ lookup('file', './verify_result') }}"
+
+- name: Check signature verification result
+  assert:
+    that:
+      - verify_result == "success"
+    fail_msg: "Signature verification failed"
+
+- name: Validate file digests 
+  shell: | 
+    cd playbook-repo
+    
+    git ls-tree -r HEAD --name-only | xargs sha256sum > playbook-summary-new
+    diff playbook-summary playbook-summary-new | grep -E "^[><]" | grep -v playbook-summary | wc -l > digest_diff
+
+- name: Set digest validation result
+  set_fact:
+    digest_diff: "{{ lookup('file', './playbook-repo/digest_diff') }}"
+
+- name: Check digest validation result
+  assert:
+    that:
+      - digest_diff == "0"
+    fail_msg: "File digest validation failed"
+
+- name: Set validation result
+  set_fact:
+    validation_result: "success"

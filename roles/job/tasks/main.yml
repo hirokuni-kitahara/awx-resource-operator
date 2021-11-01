@@ -35,10 +35,28 @@
       - tower_config_secret["resources"] is defined and (tower_config_secret["resources"]|length>0)
     fail_msg: "Tower Secret must exist"
 
+
+- name: Set default validation result
+  set_fact:
+    validation_result: "failure"
+
 - name: Validate playbook
   include_role:
     name: playbookvalidator
     public: yes
+
+- block:
+    - name: Update AnsibleJob status with validation result
+      k8s_status:
+        api_version: tower.ansible.com/v1alpha1
+        kind: AnsibleJob
+        name: "{{ ansible_operator_meta.name }}"
+        namespace: "{{ ansible_operator_meta.namespace }}"
+        status:
+          message: "Failed to validate the playbook"
+    - name: End play due to validation failure
+      meta: end_play
+  when: validation_result == "failure"
 
 - name: Set user provided runner image
   set_fact:
