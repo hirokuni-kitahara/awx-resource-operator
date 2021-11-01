@@ -1,0 +1,30 @@
+---
+
+- name: Set AAP vars
+  set_fact:
+    aap_api_url: "{{ tower_config_secret['resources'][0]['data']['host'] | b64decode }}/api/v2/"
+    aap_token: "{{ tower_config_secret['resources'][0]['data']['token'] | b64decode | b64decode }}"
+
+- name: Install jq if not exist
+  shell: |
+    if ! command -v jq > /dev/null; then
+      curl -o ./jq -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && chmod +x ./jq
+    fi
+
+- name: Get Playbook info
+  shell: | 
+    curl -s -k -f -H 'Content-Type: application/json' -XGET --user {{ aap_token }} {{ aap_api_url }}job_templates/ > job_templates.json
+    cat job_templates.json | ./jq .results | ./jq '.[] | select(.name=="{{ job_template_name }}")' > target_job_template.json
+    cat target_job_template.json | ./jq .playbook > playbook_name
+    proj_id=$(cat target_job_template.json | ./jq .project)
+    curl -s -k -f -H 'Content-Type: application/json' -XGET --user {{ aap_token }} {{ aap_api_url }}projects/$proj_id/ > target_project.json
+    cat target_project.json | ./jq .scm_url > playbook_repo_url
+
+- name: Set playbook info vars
+  set_fact:
+    playbook_name: "{{ lookup('file', './playbook_name') }}"
+    playbook_repo_url: "{{ lookup('file', './playbook_repo_url') }}"
+
+- name: Output results
+  debug:
+    msg: "Playbook Info: URL={{ playbook_repo_url }}, FILE={{ playbook_name }}."

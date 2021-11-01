@@ -1,0 +1,8 @@
+apiVersion: tower.ansible.com/v1alpha1
+kind: AnsibleJob
+metadata:
+  name: sample-job
+  namespace: awx-resource-operator
+spec:
+  job_template_name: OS Hardening Job Template
+  tower_auth_secret: admin

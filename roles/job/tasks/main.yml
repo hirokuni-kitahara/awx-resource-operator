@@ -35,6 +35,11 @@
       - tower_config_secret["resources"] is defined and (tower_config_secret["resources"]|length>0)
     fail_msg: "Tower Secret must exist"
 
+- name: Validate playbook
+  include_role:
+    name: playbookvalidator
+    public: yes
+
 - name: Set user provided runner image
   set_fact:
     _custom_runner_image: "{{ runner_image }}:{{ runner_version }}"
