@@ -19,20 +19,30 @@
     proj_id=$(cat target_job_template.json | ./jq .project)
     curl -s -k -f -H 'Content-Type: application/json' -XGET --user {{ aap_token }} {{ aap_api_url }}projects/$proj_id/ > target_project.json
     cat target_project.json | ./jq -r .scm_url > playbook_repo_url
+    cat target_project.json | ./jq -r .scm_revision > playbook_repo_revision
+    cat target_project.json | ./jq -r .scm_update_on_launch > project_scm_update_on_launch
 
 - name: Set playbook info vars
   set_fact:
     playbook_name: "{{ lookup('file', './playbook_name') }}"
     playbook_repo_url: "{{ lookup('file', './playbook_repo_url') }}"
+    playbook_repo_revision: "{{ lookup('file', './playbook_repo_revision') }}"
+    project_scm_update_on_launch: "{{ lookup('file', './project_scm_update_on_launch') }}"
+
+- name: Set revision as HEAD if scm_update_on_launch is enabled
+  set_fact:
+    playbook_repo_revision: "HEAD"
+  when: project_scm_update_on_launch == "true"
 
 - name: Output results
   debug:
-    msg: "Playbook Info: URL={{ playbook_repo_url }}, FILE={{ playbook_name }}."
+    msg: "Playbook Info: URL={{ playbook_repo_url }}, REV={{ playbook_repo_revision }} ,FILE={{ playbook_name }}."
 
 - name: Git clone
   ansible.builtin.git:
     repo: "{{ playbook_repo_url }}.git"
     dest: ./playbook-repo/
+    version: "{{ playbook_repo_revision }}"
 
 - name: Read Public key Secret
   k8s_info:
