@@ -29,7 +29,9 @@ spec:
         - --leader-elect
         - --leader-election-id=awx-resource-operator
         image: controller:latest
+        imagePullPolicy: Always
         name: awx-resource-manager
+        resources: {}
         env:
         - name: ANSIBLE_GATHERING
           value: explicit
@@ -42,6 +44,9 @@ spec:
         - name: RELATED_IMAGE_ANSIBLE_JOB_RUNNER_IMAGE
           # Replace this with the job runner built image name
           value: quay.io/open-cluster-management/platform-resource-runner:latest
+        - name: RELATED_IMAGE_PLAYBOOK_INTEGRITY_RUNNER_IMAGE
+          # Replace this with the playbook integrity runner built image name
+          value: ghcr.io/hirokuni-kitahara/playbook-integrity-runner:latest
         securityContext:
           allowPrivilegeEscalation: false
         livenessProbe:

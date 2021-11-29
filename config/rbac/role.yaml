@@ -90,6 +90,23 @@ rules:
       - patch
       - update
       - watch
+  ##
+  ## Rules for tower.ansible.com/v1alpha1, Kind: PlaybookIntegrity
+  ##
+  - apiGroups:
+      - tower.ansible.com
+    resources:
+      - playbookintegrities
+      - playbookintegrities/status
+      - playbookintegrities/finalizers
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
 #+kubebuilder:scaffold:rules
 
 ##
