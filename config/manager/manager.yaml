@@ -43,7 +43,8 @@ spec:
               fieldPath: metadata.namespace
         - name: RELATED_IMAGE_ANSIBLE_JOB_RUNNER_IMAGE
           # Replace this with the job runner built image name
-          value: quay.io/open-cluster-management/platform-resource-runner:latest
+          # value: quay.io/open-cluster-management/platform-resource-runner:latest
+          value: ghcr.io/hirokuni-kitahara/platform-resource-runner:latest
         - name: RELATED_IMAGE_PLAYBOOK_INTEGRITY_RUNNER_IMAGE
           # Replace this with the playbook integrity runner built image name
           value: ghcr.io/hirokuni-kitahara/playbook-integrity-runner:latest

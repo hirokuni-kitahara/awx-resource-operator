@@ -25,13 +25,13 @@
 
 - name: Update Project configuration based on PlaybookIntegrity
   shell: | 
-    curl -s -k -f -H 'Content-Type: application/json' -XGET --user '{{ aap_token }}' '{{ aap_api_url }}job_templates/' > job_templates.json
-    cat job_templates.json | ./jq .results | ./jq '.[] | select(.name=="{{ lookup('env','CONTROLLER_JOB_TEMPLATE_NAME') }}")' > target_job_template.json
-    proj_id=$(cat target_job_template.json | ./jq -r .project)
+    curl -s -k -f -H 'Content-Type: application/json' -XGET --user '{{ aap_token }}' '{{ aap_api_url }}projects/' > projects.json
+    cat projects.json | ./jq .results | ./jq '.[] | select(.name=="{{ lookup('env','CONTROLLER_PROJECT_NAME') }}")' > target_project.json
+    proj_id=$(cat target_project.json | ./jq -r .id)
     echo $proj_id > project_id
+    enabled={{ 'true' if playbook_integrity['resources'][0]['spec']['enabled'] else 'false' }}
     pubkey={{ playbook_integrity['resources'][0]['spec']['public_key'] }}
-    curl -s -k -f -H 'Content-Type: application/json' -XGET --user '{{ aap_token }}' "{{ aap_api_url }}projects/$proj_id/" > target_project.json
-    curl -s -k -f -H 'Content-Type: application/json' -XPATCH --user '{{ aap_token }}' "{{ aap_api_url }}projects/$proj_id/" -d "{\"playbook_integrity_enabled\":true,\"playbook_integrity_public_key\":\"$pubkey\"}"
+    curl -s -k -f -H 'Content-Type: application/json' -XPATCH --user '{{ aap_token }}' "{{ aap_api_url }}projects/$proj_id/" -d "{\"playbook_integrity_enabled\":$enabled,\"playbook_integrity_public_key\":\"$pubkey\"}"
     cat target_project.json | ./jq -r .name > project_name
 
 - name: Debug
@@ -56,8 +56,8 @@
 - name: Get playbook integrity result from API
   shell: | 
     curl -s -k -f -H 'Content-Type: application/json' -XGET --user '{{ aap_token }}' "{{ aap_api_url }}projects/{{ lookup('file', 'project_id') }}/" > updated_project.json
-    cat updated_project.json | ./jq -r .playbook_integrity_latest_result.verified > playbook_integrity_verified
-    cat updated_project.json | ./jq -r .playbook_integrity_latest_result.error > playbook_integrity_error
+    cat updated_project.json | ./jq -r .playbook_integrity_enabled > playbook_integrity_enabled
+    cat updated_project.json | ./jq -r .playbook_integrity_latest_result > playbook_integrity_latest_result
 
 - name: Update PlaybookIntegrity definition with Tower job id
   k8s:
@@ -83,5 +83,5 @@
         finished: "{{ project_update_job.finished }}"
         started: "{{ project_update_job.started }}"
         status: "{{ project_update_job.status }}"
-        verified: "{{ lookup('file', 'playbook_integrity_verified') }}"
-        error: "{{ lookup('file', 'playbook_integrity_error') }}"
+        enabled: "{{ lookup('file', 'playbook_integrity_enabled') }}"
+        latest_result: "{{ lookup('file', 'playbook_integrity_latest_result') }}"

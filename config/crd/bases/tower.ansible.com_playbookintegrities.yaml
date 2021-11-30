@@ -27,12 +27,12 @@ spec:
             properties:
               tower_auth_secret:
                 type: string
-              job_template_name:
-                type: string
-                description: A job template name for enabling playbook integrity (project name will be resolbed)
               project_name:
                 type: string
                 description: A project name for enabling playbook integrity
+              enabled:
+                type: boolean
+                description: A flag of enabling playbook integrity check
               public_key:
                 type: string
                 description: Base64 encoded public keyring byte

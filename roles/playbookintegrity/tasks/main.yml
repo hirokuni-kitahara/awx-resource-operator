@@ -69,5 +69,5 @@
         env:
           inventory: "{{ inventory | default(omit) }}"
           secretNamespacedName: "{{ ansible_operator_meta.namespace+'/'+tower_auth_secret }}"
-          templateName: "{{ job_template_name }}"
+          projectName: "{{ project_name }}"
           verifySSL: false

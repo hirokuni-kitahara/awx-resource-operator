@@ -21,8 +21,8 @@ spec:
                   value: "{{ tower_config_secret['resources'][0]['data']['token'] | b64decode | trim }}"
                 - name: CONTROLLER_HOST
                   value: "{{ tower_config_secret['resources'][0]['data']['host'] | b64decode | trim }}"
-                - name: CONTROLLER_JOB_TEMPLATE_NAME
-                  value: "{{ job_template_name }}"
+                - name: CONTROLLER_PROJECT_NAME
+                  value: "{{ project_name }}"
                 - name: CONTROLLER_VERIFY_SSL
                   value: "False"
                 - name: PLAYBOOKINTEGRITY_NAME
