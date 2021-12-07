@@ -8,5 +8,9 @@ RUN ansible-galaxy collection install -r ${HOME}/requirements.yml \
 
 RUN pip3 install ansible-tower-cli kubernetes==11.0.0 openshift
 
+RUN curl -o ./jq -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \
+ && chmod +x ./jq \
+ && cp ./jq /usr/local/bin/jq
+
 COPY roles/job_runner ${HOME}/roles/job_runner
 CMD ["ansible-runner", "--role-skip-facts", "-r", "job_runner", "run", "/runner"]

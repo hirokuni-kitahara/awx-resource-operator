@@ -62,12 +62,6 @@
         status: "{{ job.status }}"
         url: "{{ lookup('env', 'TOWER_HOST') + '/#/jobs/playbook/' + (job.id|string) }}"
 
-- name: Install jq if not exist
-  shell: |
-    if ! command -v jq > /dev/null; then
-      curl -o ./jq -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && chmod +x ./jq
-    fi
-
 - name: Wait for the tower job, if error update AnsibleJob status then end play
   block:
     - name: Register Job result when complete
@@ -81,16 +75,11 @@
     - name: Get playbook integrity result of the job
       shell: |
         curl -s -k -f -H 'Content-Type: application/json' -XGET --user '{{ controller_token }}' '{{ controller_host }}/api/v2/jobs/{{ job.id }}/' > job.json
-        cat job.json | ./jq -r '.playbook_integrity_verified' > playbook_integrity_verified
-        cat job.json | ./jq -r '.playbook_integrity_result' > playbook_integrity_result
-    
-    - name: Debug job.json
-      debug:
-        msg: "{{ lookup('file', 'job.json') }}"
+        cat job.json | jq -r '.playbook_integrity_result' > playbook_integrity_result
 
-    - name: Debug result
+    - name: Debug playbook_integrity_result
       debug:
-        msg: "verified: {{ lookup('file', 'playbook_integrity_verified') }}, result: {{ lookup('file', 'playbook_integrity_result') }}"
+        msg: "playbook_integrity_result: {{ lookup('file', 'playbook_integrity_result') }}"
 
     - name: Update status if job results in an error
       k8s_status:
@@ -101,17 +90,14 @@
         status:
           ansibleJobResult:
             status: "error"
-          playbookIntegrityResult:
-            verified: "{{ True if lookup('file', 'playbook_integrity_verified') == 'true' else False }}"
-            result: "{{ lookup('file', 'playbook_integrity_result') }}"
+            playbookIntegrity:  "{{ lookup('file', 'playbook_integrity_result') }}"
     - name: End playbook run
       meta: end_play
 
 - name: Get playbook integrity result of the job
   shell: |
-    curl -s -k -f -H 'Content-Type: application/json' -XGET --user '{{ controller_token }}' '{{ controller_host }}/api/v2/jobs/{{ job.id }}' > job.json
-    cat job.json | ./jq -r '.playbook_integrity_verified' > playbook_integrity_verified
-    cat job.json | ./jq -r '.playbook_integrity_result' > playbook_integrity_result
+    curl -s -k -f -H 'Content-Type: application/json' -XGET --user '{{ controller_token }}' '{{ controller_host }}/api/v2/jobs/{{ job.id }}/' > job.json
+    cat job.json | jq -r '.playbook_integrity_result' > playbook_integrity_result
 
 - name: Update AnsibleJob status with Tower job result
   k8s_status:
@@ -125,6 +111,4 @@
         finished: "{{ job_result.finished }}"
         started: "{{ job_result.started }}"
         status: "{{ job_result.status }}"
-      playbookIntegrityResult:
-        verified: "{{ lookup('file', 'playbook_integrity_verified') }}"
-        result: "{{ lookup('file', 'playbook_integrity_result') }}"
+        playbookIntegrity:  "{{ lookup('file', 'playbook_integrity_result') }}"
