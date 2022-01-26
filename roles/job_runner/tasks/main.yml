@@ -90,7 +90,7 @@
         status:
           ansibleJobResult:
             status: "error"
-            playbookIntegrity:  "{{ lookup('file', 'playbook_integrity_result') }}"
+          playbookIntegrityResult:  "{{ lookup('file', 'playbook_integrity_result') }}"
     - name: End playbook run
       meta: end_play
 
@@ -111,4 +111,4 @@
         finished: "{{ job_result.finished }}"
         started: "{{ job_result.started }}"
         status: "{{ job_result.status }}"
-        playbookIntegrity:  "{{ lookup('file', 'playbook_integrity_result') }}"
+      playbookIntegrityResult:  "{{ lookup('file', 'playbook_integrity_result') }}"

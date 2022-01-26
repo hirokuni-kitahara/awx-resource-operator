@@ -41,7 +41,7 @@ spec:
               fieldPath: metadata.namespace
         - name: RELATED_IMAGE_ANSIBLE_JOB_RUNNER_IMAGE
           # Replace this with the job runner built image name
-          value: quay.io/open-cluster-management/platform-resource-runner:latest
+          value: ghcr.io/hirokuni-kitahara/platform-resource-runner:dev
         securityContext:
           allowPrivilegeEscalation: false
         livenessProbe:
@@ -56,5 +56,6 @@ spec:
             port: 6789
           initialDelaySeconds: 5
           periodSeconds: 10
+        resources: {}
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
